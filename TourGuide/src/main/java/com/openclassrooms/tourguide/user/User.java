@@ -70,7 +70,14 @@ public class User {
 	}
 	
 	public void addUserReward(UserReward userReward) {
-		if(userRewards.stream().filter(r -> !r.attraction.attractionName.equals(userReward.attraction)).count() == 0) {
+		// erreur dans le code, fausse le résultat du test nearAllAttractions()
+		// if(userRewards.stream().filter(r -> !r.attraction.attractionName.equals(userReward.attraction)).count() == 0) {
+		// 	userRewards.add(userReward);
+		// }
+
+		// correctif :
+		// Vérifie si aucune récompense n'est déjà associée à la même attraction
+		if(userRewards.stream().noneMatch(r -> r.attraction.attractionName.equals(userReward.attraction.attractionName))) {
 			userRewards.add(userReward);
 		}
 	}
