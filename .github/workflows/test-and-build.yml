@@ -1,0 +1,44 @@
+name: TourGuide test and build Workflow
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Étape 1 : Vérification du code source
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Étape 2 : Configuration de Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Étape 3 : Compilation
+      - name: Compile the code
+        run: ./mvnw compile
+
+      # Étape 4 : Tests
+      - name: Run tests
+        run: ./mvnw test
+
+      # Étape 5 : Build des artefacts
+      - name: Build project
+        run: ./mvnw package
+
+      # Étape 6 : Sauvegarde des artefacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TourGuide-jar
+          path: target/*.jar
