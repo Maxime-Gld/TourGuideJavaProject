@@ -13,32 +13,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Étape 1 : Vérification du code source
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Étape 2 : Configuration de Java
+      # configuration de java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # Étape 3 : Compilation
+      # Étape 1 : Compilation
       - name: Compile the code
-        run: ./mvnw compile
+        run: |
+          cd TourGuide
+          ./mvnw compile
 
-      # Étape 4 : Tests
+      # Étape 2 : Tests
       - name: Run tests
-        run: ./mvnw test
+        run: |
+          cd TourGuide
+          ./mvnw test
 
-      # Étape 5 : Build des artefacts
+      # Étape 3 : Build des artefacts
       - name: Build project
-        run: ./mvnw package
+        run: |
+          cd TourGuide
+          ./mvnw package -DskipTests
 
-      # Étape 6 : Sauvegarde des artefacts
+      # Étape 4 : Sauvegarde des artefacts
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: TourGuide-jar
-          path: target/*.jar
+          path: |
+            TourGuide/target/*.jar
