@@ -2,6 +2,9 @@ package com.openclassrooms.tourguide.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.springframework.stereotype.Service;
 
@@ -15,6 +18,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 @Service
 public class RewardsService {
+	private ExecutorService executorService = Executors.newFixedThreadPool(64);
 	private static final double STATUTE_MILES_PER_NAUTICAL_MILE = 1.15077945;
 
 	// proximity in miles
@@ -37,20 +41,21 @@ public class RewardsService {
 		proximityBuffer = defaultProximityBuffer;
 	}
 
-	public void calculateRewards(User user) {
-		List<Attraction> attractions = gpsUtil.getAttractions();
-		List<VisitedLocation> copyUserLocations = new ArrayList<>(user.getVisitedLocations());
-
-		for(VisitedLocation visitedLocation : copyUserLocations) {
-			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+	public CompletableFuture<Void> calculateRewards(User user) {
+		return CompletableFuture.runAsync(() -> { 
+			List<Attraction> attractions = gpsUtil.getAttractions();
+			List<VisitedLocation> copyUserLocations = new ArrayList<>(user.getVisitedLocations());
+	
+			for(VisitedLocation visitedLocation : copyUserLocations) {
+				for(Attraction attraction : attractions) {
+					if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
+						if(nearAttraction(visitedLocation, attraction)) {
+							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+						}
 					}
 				}
 			}
-		}
-
+		}, executorService);
 	}
 
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {

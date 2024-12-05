@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -34,6 +37,7 @@ import tripPricer.TripPricer;
 
 @Service
 public class TourGuideService {
+	private ExecutorService executorService = Executors.newFixedThreadPool(32);
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
 	private final GpsUtil gpsUtil;
 	private final RewardsService rewardsService;
@@ -63,7 +67,7 @@ public class TourGuideService {
 
 	public VisitedLocation getUserLocation(User user) {
 		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-				: trackUserLocation(user);
+				: trackUserLocation(user).join();
 		return visitedLocation;
 	}
 
@@ -90,11 +94,18 @@ public class TourGuideService {
 		return providers;
 	}
 
-	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
+	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
+		// Exécution asynchrone de la récupération de la position
+		return CompletableFuture.supplyAsync(() -> {
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			user.addToVisitedLocations(visitedLocation); // Ajout des données utilisateur
+			rewardsService.calculateRewards(user); // Calcul des récompenses (asynchrone possible)
+			return visitedLocation;
+	}, executorService)
+		.exceptionally(e -> {
+			logger.error("Error tracking user location", e);
+			return null;
+		});
 	}
 
 	// la méthode renvoie les 5 plus proches attractions
