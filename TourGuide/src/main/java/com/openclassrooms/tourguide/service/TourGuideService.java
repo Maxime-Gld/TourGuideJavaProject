@@ -99,10 +99,9 @@ public class TourGuideService {
 		return CompletableFuture.supplyAsync(() -> {
 			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 			user.addToVisitedLocations(visitedLocation); // Ajout des données utilisateur
-			rewardsService.calculateRewards(user); // Calcul des récompenses (asynchrone possible)
+			rewardsService.calculateRewards(user).join(); // Calcul des récompenses
 			return visitedLocation;
-	}, executorService)
-		.exceptionally(e -> {
+		}, executorService).exceptionally(e -> {
 			logger.error("Error tracking user location", e);
 			return null;
 		});
